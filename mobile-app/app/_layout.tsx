@@ -14,8 +14,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="focus-training" />
+        <Stack.Screen name="hrv-training" />
+        <Stack.Screen name="breathe" />
+        <Stack.Screen name="rhythm" />
+        <Stack.Screen name="clear" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
