@@ -29,15 +29,70 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { Vibration, Platform } from "react-native";
+import { Accelerometer } from "expo-sensors";
+import axios from "axios";
 
 export default function Dashboard() {
   const router = useRouter();
   const pulse = useSharedValue(1);
   const [activeMode, setActiveMode] = useState("BREATHE");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const shakeStartTime = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     pulse.value = withRepeat(withTiming(1.1, { duration: 2500 }), -1, true);
   }, [pulse]);
+
+  React.useEffect(() => {
+    Accelerometer.setUpdateInterval(200);
+    const subscription = Accelerometer.addListener((data) => {
+      if (isAnalyzing || !data || typeof data.x !== 'number') return;
+
+      const magnitude = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
+      
+      if (magnitude > 2.0) {
+        if (shakeStartTime.current === null) {
+          shakeStartTime.current = Date.now();
+        } else if (Date.now() - shakeStartTime.current >= 3000) {
+          shakeStartTime.current = null;
+          triggerSensorIntervention(magnitude);
+        }
+      } else {
+        shakeStartTime.current = null;
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isAnalyzing]);
+
+  const triggerSensorIntervention = async (shakeForce: number) => {
+    setIsAnalyzing(true);
+    try {
+      // Use localhost on Web to avoid CORS/Network Error, use device IP natively
+      const backendUrl = Platform.OS === 'web' 
+        ? "http://localhost:8000/analyze-stress" 
+        : "http://192.168.56.1:8000/analyze-stress";
+        
+      const response = await axios.post(backendUrl, {
+        shake_force: shakeForce,
+        sensor_data: []
+      });
+      const data = response.data;
+      if (data.type === "BREATHE" || data.type === "CALM" || data.type === "FOCUS") {
+        Vibration.vibrate();
+        if (data.type === "BREATHE") {
+           router.push("/breathe");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const orbStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
