@@ -18,6 +18,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="focus-training" />
         <Stack.Screen name="hrv-training" />
+        <Stack.Screen name="resilience" />
         <Stack.Screen name="breathe" />
         <Stack.Screen name="rhythm" />
         <Stack.Screen name="clear" />

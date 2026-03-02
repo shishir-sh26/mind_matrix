@@ -38,7 +38,7 @@ export default function ExercisesScreen() {
             title="Resilience"
             duration="15 min"
             icon={<Dumbbell size={24} color="#fbbf24" />}
-            onPress={() => router.push('/rhythm')}
+            onPress={() => router.push('/resilience')}
           />
         </View>
       </ScrollView>
