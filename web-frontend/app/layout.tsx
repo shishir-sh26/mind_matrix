@@ -1,9 +1,19 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import BottomNav from "../components/BottomNav";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: "Mind Matrix Admin",
-  description: "Admin Dashboard for Mind Matrix",
+  title: "Smart Toolkit Intervention",
+  description: "Web mirror of the mobile intervention platform.",
 };
 
 export default function RootLayout({
@@ -13,8 +23,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#F5F7FA] text-gray-800">
-        {children}
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <div className="app-container">
+          {children}
+          <BottomNav />
+        </div>
       </body>
     </html>
   );
