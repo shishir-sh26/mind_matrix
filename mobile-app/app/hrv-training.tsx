@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 import { Camera, CameraView } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
@@ -7,8 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ArrowLeft, Activity, Heart, Wind, Zap } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-const { width, height } = Dimensions.get('window');
+import { useAppTheme } from './theme-context';
 
 // Signal Processing Constants
 const SAMPLE_RATE = 50; // Hz
@@ -18,6 +17,8 @@ const SAMPLES_NEEDED = HEART_RATE_WINDOW * SAMPLE_RATE;
 
 export default function HRVTrainingScreen() {
     const router = useRouter();
+    const { isLightMode } = useAppTheme();
+    const styles = createStyles(isLightMode);
     const [hasPermission, setHasPermission] = useState(false);
     const [isMeasuring, setIsMeasuring] = useState(false);
     const [bpm, setBpm] = useState(0);
@@ -28,7 +29,6 @@ export default function HRVTrainingScreen() {
     const lastUpdate = useRef(0);
 
     // Animation Refs
-    const flowerScale = useRef(new Animated.Value(1)).current;
     const pulseAnim = useRef(new Animated.Value(0)).current;
     const breathAnim = useRef(new Animated.Value(0)).current;
 
@@ -40,43 +40,7 @@ export default function HRVTrainingScreen() {
         Accelerometer.setUpdateInterval(UPDATE_INTERVAL);
     }, []);
 
-    // Pulse Detection Algorithm (Seismocardiography)
-    useEffect(() => {
-        if (!isMeasuring) return;
-
-        // Breathing Pacer Animation
-        const pacer = Animated.loop(
-            Animated.sequence([
-                Animated.timing(breathAnim, { toValue: 1, duration: 4000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-                Animated.timing(breathAnim, { toValue: 0, duration: 5000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-            ])
-        ).start();
-
-        const subscription = Accelerometer.addListener(data => {
-            const { x, y, z } = data;
-            // We use the magnitude of acceleration for SCG
-            const magnitude = Math.sqrt(x * x + y * y + z * z);
-
-            samples.current.push(magnitude);
-            if (samples.current.length > SAMPLES_NEEDED) {
-                samples.current.shift();
-            }
-
-            // Every 1 second, calculate heart rate from real sensor data
-            const now = Date.now();
-            if (now - lastUpdate.current > 1000) {
-                processSensorData();
-                lastUpdate.current = now;
-            }
-        });
-
-        return () => {
-            subscription.remove();
-            breathAnim.setValue(0);
-        };
-    }, [isMeasuring]);
-
-    const processSensorData = () => {
+    const processSensorData = React.useCallback(() => {
         if (samples.current.length < SAMPLES_NEEDED / 2) return;
 
         // Simple peak detection on the real accelerometer signal
@@ -115,7 +79,43 @@ export default function HRVTrainingScreen() {
                 Animated.timing(pulseAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
             ]).start();
         }
-    };
+    }, [pulseAnim]);
+
+    // Pulse Detection Algorithm (Seismocardiography)
+    useEffect(() => {
+        if (!isMeasuring) return;
+
+        // Breathing Pacer Animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(breathAnim, { toValue: 1, duration: 4000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+                Animated.timing(breathAnim, { toValue: 0, duration: 5000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+            ])
+        ).start();
+
+        const subscription = Accelerometer.addListener(data => {
+            const { x, y, z } = data;
+            // We use the magnitude of acceleration for SCG
+            const magnitude = Math.sqrt(x * x + y * y + z * z);
+
+            samples.current.push(magnitude);
+            if (samples.current.length > SAMPLES_NEEDED) {
+                samples.current.shift();
+            }
+
+            // Every 1 second, calculate heart rate from real sensor data
+            const now = Date.now();
+            if (now - lastUpdate.current > 1000) {
+                processSensorData();
+                lastUpdate.current = now;
+            }
+        });
+
+        return () => {
+            subscription.remove();
+            breathAnim.setValue(0);
+        };
+    }, [isMeasuring, breathAnim, processSensorData]);
 
     const startSession = () => {
         setIsMeasuring(true);
@@ -139,7 +139,7 @@ export default function HRVTrainingScreen() {
         <ThemedView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <ArrowLeft color="white" size={24} />
+                    <ArrowLeft color={isLightMode ? "#0f172a" : "white"} size={24} />
                 </TouchableOpacity>
                 <ThemedText type="subtitle" style={styles.headerTitle}>HRV Bio-feedback</ThemedText>
                 <View style={{ width: 24 }} />
@@ -209,10 +209,10 @@ export default function HRVTrainingScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isLight: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#091212',
+        backgroundColor: isLight ? "#f8fafc" : '#091212',
     },
     header: {
         flexDirection: 'row',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     headerTitle: {
-        color: 'white',
+        color: isLight ? "#0f172a" : 'white',
         fontSize: 18,
         fontWeight: '700',
     },
@@ -236,17 +236,19 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     statCard: {
-        backgroundColor: '#142121',
+        backgroundColor: isLight ? "#ffffff" : '#142121',
         width: '48%',
         padding: 20,
         borderRadius: 24,
         alignItems: 'center',
         gap: 8,
+        borderWidth: 1,
+        borderColor: isLight ? "#e2e8f0" : "transparent",
     },
     statValue: {
         fontSize: 20,
         fontWeight: '800',
-        color: 'white',
+        color: isLight ? "#0f172a" : 'white',
     },
     statLabel: {
         fontSize: 10,
@@ -269,17 +271,17 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         position: 'absolute',
-        backgroundColor: '#13ecec30',
+        backgroundColor: isLight ? 'rgba(2, 132, 199, 0.15)' : '#13ecec30',
         borderRadius: 30,
         borderWidth: 1,
-        borderColor: '#13ecec60',
+        borderColor: isLight ? 'rgba(2, 132, 199, 0.3)' : '#13ecec60',
     },
     pulseInner: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#f87171',
-        shadowColor: '#f87171',
+        backgroundColor: isLight ? '#ef4444' : '#f87171',
+        shadowColor: isLight ? '#ef4444' : '#f87171',
         shadowRadius: 15,
         elevation: 8,
     },
@@ -289,7 +291,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     instructionText: {
-        color: '#64748b',
+        color: isLight ? '#475569' : '#64748b',
         textAlign: 'center',
         lineHeight: 20,
         fontSize: 14,
@@ -316,7 +318,7 @@ const styles = StyleSheet.create({
         paddingVertical: 20,
         borderRadius: 30,
         borderWidth: 1,
-        borderColor: '#ffffff20',
+        borderColor: isLight ? "#cbd5e1" : '#ffffff20',
         alignItems: 'center',
     },
     stopBtnText: {

@@ -6,16 +6,43 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  Linking,
 } from "react-native";
-import { AlertCircle, Phone, Heart, ShieldAlert } from "lucide-react-native";
+import { Phone, ShieldAlert, Stethoscope } from "lucide-react-native";
+import { useAppTheme } from "../theme-context";
+
+const DOCTORS = [
+  {
+    name: "Dr. Sarah Jenkins",
+    specialty: "Clinical Psychologist",
+    phone: "1-800-555-0199",
+  },
+  {
+    name: "Dr. Michael Chen",
+    specialty: "Psychiatrist",
+    phone: "1-800-555-0122",
+  },
+  {
+    name: "National Crisis Line",
+    specialty: "24/7 Support",
+    phone: "988",
+  },
+];
 
 export default function EmergencyScreen() {
+  const { isLightMode } = useAppTheme();
+  const styles = createStyles(isLightMode);
+
+  const handleCall = (phone: string) => {
+    Linking.openURL(`tel:${phone}`);
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isLightMode ? "dark-content" : "light-content"} />
       <View style={styles.header}>
         <Text style={styles.subTitle}>EMERGENCY</Text>
-        <Text style={styles.title}>SOS Protocol</Text>
+        <Text style={styles.title}>Medical Support</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -23,44 +50,49 @@ export default function EmergencyScreen() {
           <ShieldAlert color="#ff4d4d" size={48} />
           <Text style={styles.alertTitle}>Immediate Help Needed?</Text>
           <Text style={styles.alertDesc}>
-            If you are in immediate danger to yourself or others, please call emergency services.
+            If you are in immediate danger to yourself or others, please call your local emergency services immediately.
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.emergencyButton}>
+        <TouchableOpacity
+          style={styles.emergencyButton}
+          onPress={() => handleCall('911')}
+        >
           <Phone color="white" size={24} />
-          <Text style={styles.emergencyButtonText}>Call Emergency Services</Text>
+          <Text style={styles.emergencyButtonText}>Call Emergency (911)</Text>
         </TouchableOpacity>
 
+        <Text style={styles.sectionTitle}>Trusted Professionals</Text>
+
         <View style={styles.resourceGrid}>
-          <ResourceCard
-            title="Crisis Hotline"
-            desc="Available 24/7 for support"
-            icon={<AlertCircle color="#13ecec" size={24} />}
-          />
-          <ResourceCard
-            title="My Support"
-            desc="Notify your trusted contacts"
-            icon={<Heart color="#a78bfa" size={24} />}
-          />
+          {DOCTORS.map((doc, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => handleCall(doc.phone)}
+            >
+              <View style={styles.cardIcon}>
+                <Stethoscope color="#13ecec" size={24} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{doc.name}</Text>
+                <Text style={styles.cardDesc}>{doc.specialty}</Text>
+              </View>
+              <View style={styles.callAction}>
+                <Phone color="#13ecec" size={20} />
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </View>
   );
 }
 
-const ResourceCard = ({ title, desc, icon }: { title: string; desc: string; icon: React.ReactNode }) => (
-  <TouchableOpacity style={styles.card}>
-    <View style={styles.cardIcon}>{icon}</View>
-    <Text style={styles.cardTitle}>{title}</Text>
-    <Text style={styles.cardDesc}>{desc}</Text>
-  </TouchableOpacity>
-);
-
-const styles = StyleSheet.create({
+const createStyles = (isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#091212",
+    backgroundColor: isLight ? "#f8fafc" : "#091212",
     paddingHorizontal: 24,
   },
   header: {
@@ -68,12 +100,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    color: "white",
+    color: isLight ? "#0f172a" : "white",
     fontSize: 32,
     fontWeight: "800",
   },
   subTitle: {
-    color: "#ff4d4d",
+    color: isLight ? "#ef4444" : "#ff4d4d",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 2,
@@ -82,16 +114,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   alertBox: {
-    backgroundColor: "#1d1414",
+    backgroundColor: isLight ? "#fef2f2" : "#1d1414",
     padding: 32,
     borderRadius: 32,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ff4d4d20",
+    borderColor: isLight ? "#fca5a5" : "#ff4d4d20",
     marginBottom: 24,
   },
   alertTitle: {
-    color: "white",
+    color: isLight ? "#0f172a" : "white",
     fontSize: 20,
     fontWeight: "700",
     marginTop: 16,
@@ -123,35 +155,49 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  sectionTitle: {
+    color: isLight ? "#0f172a" : 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
   resourceGrid: {
     gap: 16,
   },
   card: {
-    backgroundColor: "#142121",
-    padding: 24,
+    backgroundColor: isLight ? "#ffffff" : "#142121",
+    padding: 20,
     borderRadius: 24,
     flexDirection: "row",
     alignItems: "center",
-    gap: 20,
+    gap: 16,
     borderWidth: 1,
-    borderColor: "#ffffff05",
+    borderColor: isLight ? "#e2e8f0" : "#ffffff05",
   },
   cardIcon: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: 16,
-    backgroundColor: "#0d1e1e",
+    backgroundColor: isLight ? "#f1f5f9" : "#0d1e1e",
     justifyContent: "center",
     alignItems: "center",
   },
   cardTitle: {
-    color: "white",
-    fontSize: 18,
+    color: isLight ? "#0f172a" : "white",
+    fontSize: 16,
     fontWeight: "700",
   },
   cardDesc: {
     color: "#64748b",
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 2,
   },
+  callAction: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#13ecec10',
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });

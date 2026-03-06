@@ -4,11 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   PanResponder,
   StatusBar,
 } from "react-native";
 import { X, Info, CheckCircle2 } from "lucide-react-native";
+import { useAudioPlayer } from "expo-audio";
+import * as Haptics from "expo-haptics";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,8 +17,9 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useAppTheme } from "./theme-context";
 
-const { width } = Dimensions.get("window");
+// Cleaned up unused constants
 
 const INITIAL_SHAPES = [
   { id: 1, x: 100, y: 150, size: 80, type: "rect" },
@@ -29,19 +31,31 @@ const INITIAL_SHAPES = [
 
 export default function ClearSpace() {
   const router = useRouter();
+  const { isLightMode } = useAppTheme();
+  const styles = createStyles(isLightMode);
   const [shapes, setShapes] = useState(INITIAL_SHAPES);
   const totalShapes = INITIAL_SHAPES.length;
   const clearedCount = totalShapes - shapes.length;
   const progress = (clearedCount / totalShapes) * 100;
+  const player = useAudioPlayer('https://cdn.jsdelivr.net/gh/extratone/macOSsystemsounds/mp3/Chimes.mp3');
+
+  const playSoothingSound = async () => {
+    if (player) {
+      player.seekTo(0);
+      player.play();
+    }
+  };
 
   const removeShape = (id: number) => {
     setShapes((prev) => prev.filter((s) => s.id !== id));
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playSoothingSound();
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <X color="white" size={24} />
@@ -65,13 +79,14 @@ export default function ClearSpace() {
             key={shape.id}
             shape={shape}
             onCleared={() => removeShape(shape.id)}
+            styles={styles}
           />
         ))}
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>You are making room for clarity...</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.finishButton, shapes.length === 0 && styles.finishButtonActive]}
           onPress={() => router.back()}
         >
@@ -88,7 +103,7 @@ export default function ClearSpace() {
   );
 }
 
-const DraggableShape = ({ shape, onCleared }: { shape: any; onCleared: () => void }) => {
+const DraggableShape = ({ shape, onCleared, styles }: { shape: any; onCleared: () => void, styles: any }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const opacity = useSharedValue(1);
@@ -138,10 +153,10 @@ const DraggableShape = ({ shape, onCleared }: { shape: any; onCleared: () => voi
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#091212",
+    backgroundColor: isLight ? "#f8fafc" : "#091212",
   },
   header: {
     flexDirection: "row",
@@ -154,7 +169,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1e293b",
+    backgroundColor: isLight ? "#e2e8f0" : "#1e293b",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -162,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerSub: {
-    color: "#94a3b8",
+    color: isLight ? "#64748b" : "#94a3b8",
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
@@ -184,7 +199,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   instructionText: {
-    color: "#64748b",
+    color: isLight ? "#475569" : "#64748b",
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 2,
@@ -194,9 +209,9 @@ const styles = StyleSheet.create({
   },
   shape: {
     position: "absolute",
-    backgroundColor: "#1e293b",
+    backgroundColor: isLight ? "#94a3b8" : "#1e293b",
     borderWidth: 1,
-    borderColor: "#ffffff10",
+    borderColor: isLight ? "#cbd5e1" : "#ffffff10",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
@@ -208,32 +223,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "#475569",
+    color: isLight ? "#475569" : "#475569",
     fontSize: 14,
     marginBottom: 20,
   },
   finishButton: {
     flexDirection: "row",
-    backgroundColor: "#1e293b",
+    backgroundColor: isLight ? "#ffffff" : "#1e293b",
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 30,
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderColor: "#ffffff05",
+    borderColor: isLight ? "#e2e8f0" : "#ffffff05",
   },
   finishButtonActive: {
-    backgroundColor: "#142121",
-    borderColor: "#10ecec30",
+    backgroundColor: isLight ? "#f8fafc" : "#142121",
+    borderColor: isLight ? "#e2e8f0" : "#10ecec30",
   },
   finishText: {
-    color: "#64748b",
+    color: isLight ? "#64748b" : "#64748b",
     fontSize: 15,
     fontWeight: "700",
   },
   finishTextActive: {
-    color: "white",
+    color: isLight ? "#0f172a" : "white",
   },
   progressBarContainer: {
     position: "absolute",
@@ -241,10 +256,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 6,
-    backgroundColor: "#111d1d",
+    backgroundColor: isLight ? "#e2e8f0" : "#111d1d",
   },
   progressBar: {
     height: "100%",
-    backgroundColor: "#3b386e", 
+    backgroundColor: isLight ? "#0284c7" : "#3b386e",
   },
 });

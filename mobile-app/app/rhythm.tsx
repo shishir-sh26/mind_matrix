@@ -7,6 +7,9 @@ import {
   StatusBar,
   Dimensions,
 } from "react-native";
+import { ChevronLeft, Info, HandMetal } from "lucide-react-native";
+import { useAudioPlayer } from "expo-audio";
+import * as Haptics from "expo-haptics";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,22 +18,34 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useRouter, Stack } from "expo-router";
-import { ChevronLeft, Info, HandMetal } from "lucide-react-native";
+import { useAppTheme } from "./theme-context";
 
 const { width } = Dimensions.get("window");
 const PAD_SIZE = width * 0.4;
 
 const RhythmTap = () => {
   const router = useRouter();
+  const { isLightMode } = useAppTheme();
+  const styles = createStyles(isLightMode);
   const [count, setCount] = useState(0);
   const scale = useSharedValue(1);
+  const player = useAudioPlayer('https://cdn.jsdelivr.net/gh/extratone/macOSsystemsounds/mp3/Input.mp3');
 
-  const handleTap = () => {
+  const handleTap = async () => {
     setCount((prev) => prev + 1);
     scale.value = withSequence(
       withTiming(0.9, { duration: 50 }),
       withSpring(1, { damping: 10, stiffness: 100 })
     );
+
+    // Haptic Feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Play Musical Sound
+    if (player) {
+      player.seekTo(0);
+      player.play();
+    }
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -41,7 +56,7 @@ const RhythmTap = () => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
           <ChevronLeft color="white" size={24} />
@@ -72,10 +87,10 @@ const RhythmTap = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isLight: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1a1010",
+    backgroundColor: isLight ? "#fef2f2" : "#1a1010",
     paddingHorizontal: 24,
   },
   header: {
@@ -85,7 +100,7 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   headerTitle: {
-    color: "white",
+    color: isLight ? "#0f172a" : "white",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -93,7 +108,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ffffff10",
+    backgroundColor: isLight ? "#e2e8f0" : "#ffffff10",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -109,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   instruction: {
-    color: "#94a3b8",
+    color: isLight ? "#64748b" : "#94a3b8",
     textAlign: "center",
     fontSize: 16,
     marginBottom: 60,
@@ -120,14 +135,14 @@ const styles = StyleSheet.create({
     width: PAD_SIZE,
     height: PAD_SIZE,
     borderRadius: PAD_SIZE / 2,
-    backgroundColor: "#2a1515",
+    backgroundColor: isLight ? "#fee2e2" : "#2a1515",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: "#f8717120",
+    borderColor: isLight ? "#f8717140" : "#f8717120",
     shadowColor: "#f87171",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
+    shadowOpacity: isLight ? 0.15 : 0.3,
     shadowRadius: 30,
     elevation: 20,
   },
@@ -135,13 +150,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   endButton: {
-    backgroundColor: "#ffffff10",
+    backgroundColor: isLight ? "#ffffff" : "#ffffff10",
     paddingVertical: 14,
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ffffff15",
+    borderColor: isLight ? "#e2e8f0" : "#ffffff15",
   },
   endText: {
     color: "#f87171",
